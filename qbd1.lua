@@ -47,11 +47,11 @@ end
 local function war()    
     if API.GetSummoningPoints_() < 100 or API.GetPray_()< 200 then
         API.DoAction_Object1(0x3d,API.OFF_ACT_GeneralObject_route0,{ 114748 },50);
-        API.RandomSleep2(4000, 500, 500)
+        API.WaitUntilMovingEnds(20, 3)
     end
     familiarexpiry()
     API.DoAction_Object1(0x29,API.OFF_ACT_GeneralObject_route3,{ 114750 },50);
-    API.WaitUntilMovingEnds(10, 3);
+    API.WaitUntilMovingEnds(20, 3)
     API.DoAction_Interface(0xffffffff,0xffffffff,1,662,78,-1,API.OFF_ACT_GeneralInterface_route)
     API.RandomSleep2(500, 500, 500)
     API.DoAction_Object1(0x39,API.OFF_ACT_GeneralObject_route0,{ 114771 },50);
