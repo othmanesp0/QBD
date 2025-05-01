@@ -47,13 +47,13 @@ end
 local function war()    
     if API.GetSummoningPoints_() < 100 or API.GetPray_()< 200 then
         API.DoAction_Object1(0x3d,API.OFF_ACT_GeneralObject_route0,{ 114748 },50);
-        API.WaitUntilMovingEnds(20, 3)
+        API.RandomSleep2(6000, 500, 500)
     end
     familiarexpiry()
     API.DoAction_Object1(0x29,API.OFF_ACT_GeneralObject_route3,{ 114750 },50);
-    API.WaitUntilMovingEnds(20, 3)
+    API.WaitUntilMovingEnds(20, 3);
     API.DoAction_Interface(0xffffffff,0xffffffff,1,662,78,-1,API.OFF_ACT_GeneralInterface_route)
-    API.RandomSleep2(500, 500, 500)
+    API.WaitUntilMovingEnds(20, 3);
     API.DoAction_Object1(0x39,API.OFF_ACT_GeneralObject_route0,{ 114771 },50);
     API.WaitUntilMovingEnds(20, 3);
  end
@@ -92,7 +92,7 @@ local function healthCheck()
     
     local hp = API.GetHPrecent()
     local eatFoodAB = API.GetABs_name1("Eat Food")
-    if hp < 50 then
+    if hp < 60 then
         print("Eating")
         API.DoAction_Ability_Direct(eatFoodAB, 1, API.OFF_ACT_GeneralInterface_route)
         UTILS.randomSleep(600)
@@ -123,48 +123,64 @@ local function findNextPhase()
 end
 
 local function collectLoot()
-    
     print("Collecting loot, state: " .. lootState)
-    
-    if lootState == 0 then
-        print("Clicking first chest (70790)")
-        API.DoAction_Object1(0x35, API.OFF_ACT_GeneralObject_route0, { 70790 }, 50)
-        API.RandomSleep2(5000, 500, 500)
-        lootState = 1
-        return false
-    elseif lootState == 1 then
-        print("Clicking second chest ")
-        API.DoAction_Object1(0x31, API.OFF_ACT_GeneralObject_route0,coffer, 50)
-        API.WaitUntilMovingEnds(15, 3)
-        lootState = 2
-        return false
-    elseif lootState == 2 then
-        print("Clicking interface")
-        API.DoAction_Interface(0x24, 0xffffffff, 1, 168, 27, -1, API.OFF_ACT_GeneralInterface_route)
-        API.RandomSleep2(2000, 500, 500)
-        lootState = 3
-        return false
-    elseif lootState == 3 then
-        print("Clicking door (70813)")
-        API.DoAction_Object1(0x39, API.OFF_ACT_GeneralObject_route0, { 70813 }, 50)
-        API.WaitUntilMovingEnds(15, 3)
-        lootState = 4
-        return false
-    elseif lootState == 4 then
-        print("Clicking door interface")
-        API.DoAction_Interface(0xffffffff, 0xffffffff, 0, 1188, 8, -1, API.OFF_ACT_GeneralInterface_Choose_option)
-        API.RandomSleep2(2000, 500, 500)
-        lootState = 5
-        return false
-    elseif lootState == 5 then
-        print("Teleporting out")
-        API.DoAction_Ability_Direct(War, 1, API.OFF_ACT_GeneralInterface_route)
-        API.RandomSleep2(5000, 500, 500)
-        lootState = 6
-        completedPhases[4] = true 
-        return true
+    local maxAttempts = 3  
+    local attempts = 0
+    local success = false
+
+    while attempts < maxAttempts do
+        success = false
+        if lootState == 0 then
+            
+            print("Attempting first chest...")
+            API.DoAction_Object1(0x35, API.OFF_ACT_GeneralObject_route0, {70790}, 50)
+            API.WaitUntilMovingEnds(15, 3)
+            
+            
+            local coffers = API.GetAllObjArray1(coffer, 50, {0})
+            if #coffers > 0 then
+                lootState = 1
+                success = true
+                print("First chest success")
+            end
+
+        elseif lootState == 1 then
+            
+            print("Attempting coffer...")
+            API.DoAction_Object1(0x31, API.OFF_ACT_GeneralObject_route0, coffer, 50)
+            API.WaitUntilMovingEnds(15, 3)
+            
+            API.RandomSleep2(2000, 500, 500)  
+            lootState = 2
+            success = true 
+
+        elseif lootState == 2 then
+            print("Attempting loot interface...")
+            API.DoAction_Interface(0x24, 0xffffffff, 1, 168, 27, -1, API.OFF_ACT_GeneralInterface_route)
+            API.WaitUntilMovingEnds(15, 3)
+                lootState = 3
+                success = true
+                print("Loot interface success")
+
+        elseif lootState == 3 then
+            print("Teleporting...")
+            API.DoAction_Ability_Direct(War, 1, API.OFF_ACT_GeneralInterface_route)
+            API.WaitUntilMovingEnds(15, 3)
+            lootState = 6
+            completedPhases[4] = true
+            return true 
+        end
+
+        if success then
+            attempts = 0 
+        else
+            attempts = attempts + 1
+            print("Retrying state "..lootState.." ("..attempts.."/"..maxAttempts..")")
+            API.RandomSleep2(1500, 500, 500)
+        end
     end
-    
+
+    print("Failed to progress loot state "..lootState)
     return false
 end
 
@@ -179,17 +195,20 @@ local function artifacts()
         if #finalArtifactObjs > 0 then
             print("Clicking final artifact in phase 4")
             API.DoAction_Object_valid1(0x29, API.OFF_ACT_GeneralObject_route0, artefact4, 100, true)
-            API.WaitUntilMovingEnds(15, 3)
-            API.RandomSleep2(4000, 500, 500)
-            API.DoAction_Interface(0x2e,0xffffffff,1,1430,220,-1,API.OFF_ACT_GeneralInterface_route)
-            API.RandomSleep2(1000, 500, 500)
+            healthCheck()
+            API.WaitUntilMovingEnds(20, 3)
+            completedPhases[currentPhase] = true
         end
-        collectLoot()
     end
     
     if completedPhases[1] and completedPhases[2] and completedPhases[3] and completedPhases[4] then
         print("All phases complete, waiting...")
-        API.RandomSleep2(1000, 500, 500)
+        API.DoAction_Interface(0x2e,0xffffffff,1,1430,220,-1,API.OFF_ACT_GeneralInterface_route)
+        API.WaitUntilMovingEnds(20, 3)
+        API.RandomSleep2(4000, 500, 500)
+        while not collectLoot() do
+            collectLoot()
+        end
         return false
     end
     
@@ -203,7 +222,7 @@ local function artifacts()
         print("Clicking artifact in phase " .. currentPhase)
         API.DoAction_Object_valid1(0x29, API.OFF_ACT_GeneralObject_route0, artefact, 100, true)
         API.WaitUntilMovingEnds(15, 3)
-        
+        healthCheck()
         API.RandomSleep2(1000, 500, 500)
         
         if checkBossSpawned() then
@@ -239,6 +258,7 @@ local function fight()
             attempts = 0  
         else 
             print("Boss not found")
+            healthCheck()
             local bossSpawned = artifacts()
             if bossSpawned then
                 print("Boss spawned, continuing fight")
@@ -269,6 +289,7 @@ while API.Read_LoopyLoop() do
     war()
     instance()
     fight()
+    API.RandomSleep2(5000, 500, 500)
 end
 
 print("Script has terminated")
