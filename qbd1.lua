@@ -1,5 +1,6 @@
 local API = require("api")
 local UTILS = require("utils")
+API.Write_fake_mouse_do(false)
 local antifire = API.GetABs_name1("Super antifire potion")
 local War = API.GetABs_name1("War's Retreat Teleport")
 local qbdIds = {15506, 15507, 15454}
@@ -124,11 +125,12 @@ end
 
 local function collectLoot()
     print("Collecting loot, state: " .. lootState)
+    healthCheck()
     local maxAttempts = 3  
     local attempts = 0
     local success = false
 
-    while attempts < maxAttempts do
+    while attempts < maxAttempts  do
         success = false
         if lootState == 0 then
             
@@ -185,6 +187,11 @@ local function collectLoot()
 end
 
 local function artifacts()    
+    healthCheck()
+    local maxAttempts = 3  
+    local attempts = 0
+    local success = false
+    local chest = API.GetAllObjArray1({70790}, 100, {0})
     if checkBossSpawned() then
         print("Boss has spawned, returning to combat")
         return true
@@ -192,12 +199,15 @@ local function artifacts()
     
     if completedPhases[1] and completedPhases[2] and completedPhases[3] and not completedPhases[4] then
         local finalArtifactObjs = API.GetAllObjArray1(artefact4, 100, { 0 })
+        
         if #finalArtifactObjs > 0 then
             print("Clicking final artifact in phase 4")
-            API.DoAction_Object_valid1(0x29, API.OFF_ACT_GeneralObject_route0, artefact4, 100, true)
-            healthCheck()
-            API.WaitUntilMovingEnds(20, 3)
-            completedPhases[currentPhase] = true
+            if #chest == 0 then
+                API.DoAction_Object_valid1(0x29, API.OFF_ACT_GeneralObject_route0, artefact4, 100, true)
+                API.WaitUntilMovingEnds() 
+            else 
+                completedPhases[currentPhase] = true
+            end
         end
     end
     
@@ -247,18 +257,18 @@ local function fight()
     local maxAttempts = 60
     local attempts = 0
     
-    while attempts < maxAttempts do
+    while attempts < maxAttempts  do
         local qbd = API.GetAllObjArrayFirst(qbdIds, 25, { 1 })
-        
+        healthCheck()
         if qbd.Id > 0 then
             print("Fighting boss")
             API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, qbdIds, 50)
             API.RandomSleep2(1000, 500, 500)
-            healthCheck()
+            
             attempts = 0  
         else 
             print("Boss not found")
-            healthCheck()
+            
             local bossSpawned = artifacts()
             if bossSpawned then
                 print("Boss spawned, continuing fight")
@@ -286,6 +296,7 @@ end
 while API.Read_LoopyLoop() do
     checkGameState()
     API.DoRandomEvents()
+    healthCheck()
     war()
     instance()
     fight()
